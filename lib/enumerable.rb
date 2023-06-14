@@ -3,8 +3,8 @@ using(Module.new do
     def my_each(&block)
       if block_given?
         new_array = self.dup
-        while result = new_array.shift
-          block.call(result)
+        for element in new_array
+          block.call(element)
         end
         self
       else
@@ -76,6 +76,66 @@ using(Module.new do
 
       self
     end
+
+    def my_all?(pattern = nil, &block)
+      if pattern
+        all_string = true
+        my_each do |n|
+          unless String === n
+            break all_string = false
+          end
+        end
+
+        if all_string
+          flag = true
+          my_each { |n| break flag = false if pattern !~ n }
+          return flag
+        else
+          return false
+        end
+      end
+
+      flag = true
+
+      my_each do |n|
+        result = block_given? ? !!block[n] : !!n
+        break flag = false if result == false
+      end
+      flag
+    end
+
+    def my_each_cons(num, &block)
+      return to_enum(__method__, num) unless block_given?
+
+      array = []
+      each do |element|
+        array << element
+        array.shift if array.size > num
+        block[array.dup] if array.size == num
+      end
+
+      self
+    end
+
+    def my_cycle(num = nil, &block)
+      return to_enum(:my_cycle, num) unless block_given?
+
+      cache = []
+      my_each do
+        cache << num
+        yield num
+      end
+
+      if num.nil?
+        loop do
+          my_each { |n| block.call(n) }
+        end
+      else
+        num.times do
+          each { |n| block.call(n) }
+        end
+      end
+    end
   end
 end)
 
@@ -96,11 +156,11 @@ end)
 # p [:a, :b, :c, :b, :a, :a, :a].my_tally(hash) == {a: 4, b: 2, c: 1}
 # p [:a, :b, :c, :b, :a, :a, :a].my_tally(hash) == {a: 8, b: 4, c: 2}
 
-p [:a, :b, :c, :b, :a, :a, :a].my_uniq == [:a, :b, :c]
-p [*1..100].my_uniq{|x| (x**2) % 10 } == [1, 2, 3, 4, 5, 10]
-p [*1..10].my_each_cons(3) {|v| v } == [*1..10].each_cons(3) { |v| v }
-p [*1..5].my_each_cons(3)
-p [*1..5].my_each_cons(3).to_a == [[1, 2, 3], [2, 3, 4], [3, 4, 5]]
+# p [:a, :b, :c, :b, :a, :a, :a].my_uniq == [:a, :b, :c]
+# p [*1..100].my_uniq{|x| (x**2) % 10 } == [1, 2, 3, 4, 5, 10]
+# p [*1..10].my_each_cons(3) {|v| v } == [*1..10].each_cons(3) { |v| v }
+# p [*1..5].my_each_cons(3)
+# p [*1..5].my_each_cons(3).to_a == [[1, 2, 3], [2, 3, 4], [3, 4, 5]]
 # 変換前　　変換後
 # 1     % 2 = 1
 # 2     % 2 = 0
@@ -110,6 +170,18 @@ p [*1..5].my_each_cons(3).to_a == [[1, 2, 3], [2, 3, 4], [3, 4, 5]]
 
 # => 1, 0  違う
 # => 1, 2 返したいもの
+
+# p [1, 2, 3].my_all? == true
+# p [].my_all? == true
+# p [true, false, true].my_all? == false
+# p [5, 6, 7].my_all? {|v| v > 0 } == true
+# p [5, -1, 7].my_all? {|v| v > 0 } == false
+# p ['cat', 'tri', 'ant'].my_all?(/t/) == true
+# p ['cat', 'bear', 'ant'].my_all?(/t/) == false
+
+["a", "b", "c"].my_cycle(2) { |x| puts x }
+["a", "b", "c"].my_cycle(2).to_a
+
 __END__
 my_sum
 -[] 復習
@@ -133,4 +205,8 @@ my_sort
 - cycle
 - find_index
 - rotate
-- all?
+
+
+→ JS
+→ 再帰
+→ 別のことする
