@@ -136,6 +136,27 @@ using(Module.new do
         end
       end
     end
+
+    def my_group_by(&block)
+      return to_enum(__method__) unless block_given?
+
+      hash = {}
+
+      my_each {|n|
+        (hash[block.call(n)] ||= []) << n
+      }
+      hash
+    end
+
+    def my_find_index(num = nil, &block)
+      count = 0
+      my_each { |n|
+        match_found = block_given? ? block.call(n) : n == num
+        return count if match_found
+        count += 1
+      }
+      nil
+    end
   end
 end)
 
@@ -182,6 +203,10 @@ end)
 ["a", "b", "c"].my_cycle(2) { |x| puts x }
 ["a", "b", "c"].my_cycle(2).to_a
 
+# p [*1..6].my_group_by{ |i| i % 3 }
+# p [*1..10].my_find_index(3)
+# p [*1..100].my_find_index  {|i| i % 5 == 0 and i % 7 == 0 }
+
 __END__
 my_sum
 -[] 復習
@@ -199,14 +224,3 @@ my_min
 -[] 引数をとった時の実装
 
 my_sort
-
--- 次回以降の候補 --
-- group_by
-- cycle
-- find_index
-- rotate
-
-
-→ JS
-→ 再帰
-→ 別のことする
